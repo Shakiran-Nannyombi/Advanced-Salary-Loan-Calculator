@@ -2,9 +2,9 @@ import streamlit as st
 import requests
 import pandas as pd
 
-st.header("SALARY LOAN CALCULATOR")
+st.header("SALARY ADVANCE LOAN CALCULATOR")
 
-st.write("Welcome to the Salary Loan Calculator!")
+st.write("Welcome to the Salary Advance Loan Calculator!")
 st.divider()
 
 # USER inputs
@@ -15,12 +15,11 @@ employee_id = st.text_input("Employee ID")
 pay_frequency = st.selectbox("Pay Frequency", ["Monthly", "Bi-Weekly", "Weekly"])
 st.write("Note: The pay frequency means how often you receive your salary.")
 
+
 st.divider()
 
 # Function to calculate loan eligibility and payment details
 st.subheader("Loan Eligibility and Payment Details")
-
-
 def mainInputs(
     gross_pay=0.0, loan_amount=0.0, loan_duration=1, variable_interest_rate=0.0
 ):
@@ -29,6 +28,7 @@ def mainInputs(
     )
     st.session_state.gross_pay = gross_pay
     st.write("Note: Gross pay is the total earnings before any deductions.")
+
     loan_amount = st.number_input(
         "Loan Amount (in Shillings)",
         min_value=0.0,
@@ -37,16 +37,20 @@ def mainInputs(
         help="shs",
     )
     st.session_state.loan_amount = loan_amount
+
     loan_duration = st.number_input("Loan Duration (Months)", min_value=1, step=1)
     st.session_state.loan_duration = loan_duration
+
     variable_interest_rate = st.number_input(
         "Interest Rate (%)", min_value=0.0, step=0.1
     )
+    st.session_state.variable_interest_rate = variable_interest_rate
     st.write("Note: The interest rate is variable and may change over time.")
 
     if st.button("Calculate"):
-        response = requests.post(
-            "http://localhost:8000/calculate-loan",
+        # First calculating how much advance one can take
+        advance_response = requests.post(
+            "http://localhost:8000/calculate-advance",
             json={
                 "gross_pay": gross_pay,
                 "loan_amount": loan_amount,
@@ -54,17 +58,36 @@ def mainInputs(
                 "variable_interest_rate": variable_interest_rate,
             },
         )
-        result = response.json()
-        st.write("Eligibility:", result.get("eligible", False))
-        if result.get("eligible", False):
-            st.write("Monthly Payment:", result.get("monthly_payment", 0.0))
-            st.write(
-                "Total Payment with Interest:",
-                result.get("total_payment_with_interest", 0.0),
-            )
-        else:
-            st.warning("We apologize, you are not eligible for the salary loan.")
 
+        if advance_response.status_code == 200:
+            advance_result = advance_response.json()
+            st.write(f"Maximum Advance Allowed: {advance_result.get('max_advance_amount', 0.0)}")
+            st.write("Advance Eligibility:", advance_result.get("eligible", False))
+
+            if advance_result.get("eligible", False):
+                # Only call calculate-loan if advance eligible
+                loan_response = requests.post(
+                    "http://localhost:8000/calculate-loan",
+                    json={
+                        "gross_pay": gross_pay,
+                        "loan_amount": loan_amount,
+                        "loan_duration": loan_duration,
+                        "variable_interest_rate": variable_interest_rate,
+                    },
+                )
+                if loan_response.status_code == 200:
+                    loan_result = loan_response.json()
+                    st.write("Monthly Payment:", loan_result.get("monthly_payment", 0.0))
+                    st.write(
+                        "Total Payment with Interest:",
+                        loan_result.get("total_payment_with_interest", 0.0),
+                    )
+                else:
+                    st.error("Failed to calculate loan details.")
+            else:
+                st.warning("You are not eligible for the salary advance loan.")
+        else:
+            st.error("Failed to check advance eligibility.")
 
 if __name__ == "__main__":
     mainInputs()
@@ -127,7 +150,7 @@ if st.button("Generate Analysis & Download CSV"):
             st.error("Failed to fetch analysis data from backend.")
     else:
         st.error("Failed to calculate loan details.")
-        
+
     st.markdown(
         '<a href="#" style="color:red; text-decoration:underline;" onclick="window.location.reload(); return false;">Reset values</a>',
         unsafe_allow_html=True,
@@ -137,4 +160,3 @@ if st.button("Generate Analysis & Download CSV"):
 st.markdown("---")
 st.markdown("Thank you for using the Salary Loan Calculator!")
 st.markdown("For any inquiries, please contact us at support@salaryloancalculator.com")
-
