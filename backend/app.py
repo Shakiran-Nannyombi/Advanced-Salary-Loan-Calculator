@@ -18,7 +18,7 @@ class LoanResponse(BaseModel):
 def calculate_loan(data: LoanRequest):
     # checking eligibility
     if data.gross_pay > 0 and data.loan_duration > 0:
-        max_loan = data.gross_pay * 0.5
+        max_loan = data.gross_pay * 0.6
         eligible = data.loan_amount <= max_loan and data.loan_amount > 0
     
     if not eligible:
@@ -42,15 +42,14 @@ def calculate_loan(data: LoanRequest):
         monthly_payment=round(monthly_payment, 2),
         total_payment_with_interest=round(total_payment_with_interest, 2),
     )
-    
-@app.get("/loan-analysis")
+
+@app.post("/loan-analysis")
 def loan_analysis(data: LoanRequest):
     analysis_data = {
-        "gross_pay": data.gross_pay,
         "loan_amount": data.loan_amount,
         "loan_duration": data.loan_duration,
         "variable_interest_rate": data.variable_interest_rate,
-        "analysis_result": "This is a placeholder for the analysis result."
+        "eligible": data.loan_amount <= (data.gross_pay * 0.6) and data.loan_amount > 0,
     }
     
     return analysis_data
