@@ -2,6 +2,8 @@ import streamlit as st
 import requests
 import pandas as pd
 
+API_URL = "https://advanced-salary-loan-calculator.onrender.com"
+
 st.header("SALARY ADVANCE LOAN CALCULATOR")
 
 st.write("Welcome to the Salary Advance Loan Calculator!")
@@ -20,6 +22,8 @@ st.divider()
 
 # Function to calculate loan eligibility and payment details
 st.subheader("Loan Eligibility and Payment Details")
+
+
 def mainInputs(
     gross_pay=0.0, loan_amount=0.0, loan_duration=1, variable_interest_rate=0.0
 ):
@@ -47,27 +51,37 @@ def mainInputs(
     st.session_state.variable_interest_rate = variable_interest_rate
     st.write("Note: The interest rate is variable and may change over time.")
 
+    advance_amount = st.number_input(
+        "Advance Amount (in Shillings)", min_value=0.0, step=100.0, format="%.2f"
+    )
+    st.session_state.advance_amount = advance_amount
+
+    advance_duration = st.number_input("Advance Duration (Months)", min_value=1, step=1)
+    st.session_state.advance_duration = advance_duration
+
     if st.button("Calculate"):
         # First calculating how much advance one can take
         advance_response = requests.post(
-            "http://localhost:8000/calculate-advance",
+            f"{API_URL}/calculate-advance",
             json={
                 "gross_pay": gross_pay,
-                "loan_amount": loan_amount,
-                "loan_duration": loan_duration,
+                "advance_amount": advance_amount,
+                "advance_duration": advance_duration,
                 "variable_interest_rate": variable_interest_rate,
             },
         )
 
         if advance_response.status_code == 200:
             advance_result = advance_response.json()
-            st.write(f"Maximum Advance Allowed: {advance_result.get('max_advance_amount', 0.0)}")
+            st.write(
+                f"Maximum Advance Allowed: {advance_result.get('max_advance_amount', 0.0)}"
+            )
             st.write("Advance Eligibility:", advance_result.get("eligible", False))
 
             if advance_result.get("eligible", False):
                 # Only call calculate-loan if advance eligible
                 loan_response = requests.post(
-                    "http://localhost:8000/calculate-loan",
+                    f"{API_URL}/calculate-loan",
                     json={
                         "gross_pay": gross_pay,
                         "loan_amount": loan_amount,
@@ -77,7 +91,9 @@ def mainInputs(
                 )
                 if loan_response.status_code == 200:
                     loan_result = loan_response.json()
-                    st.write("Monthly Payment:", loan_result.get("monthly_payment", 0.0))
+                    st.write(
+                        "Monthly Payment:", loan_result.get("monthly_payment", 0.0)
+                    )
                     st.write(
                         "Total Payment with Interest:",
                         loan_result.get("total_payment_with_interest", 0.0),
@@ -88,6 +104,7 @@ def mainInputs(
                 st.warning("You are not eligible for the salary advance loan.")
         else:
             st.error("Failed to check advance eligibility.")
+
 
 if __name__ == "__main__":
     mainInputs()
@@ -106,7 +123,7 @@ variable_interest_rate = st.session_state.get("variable_interest_rate", 0.0)
 if st.button("Generate Analysis & Download CSV"):
     # getting the calculation result
     calc_response = requests.post(
-        "http://localhost:8000/calculate-loan",
+        f"{API_URL}/calculate-loan",
         json={
             "gross_pay": gross_pay,
             "loan_amount": loan_amount,
@@ -128,17 +145,13 @@ if st.button("Generate Analysis & Download CSV"):
                 "total_payment_with_interest", 0.0
             ),
         }
-        analysis_response = requests.post(
-            "http://localhost:8000/loan-analysis", json=analysis_payload
-        )
-        if analysis_response.status_code == 200:
-            data = analysis_response.json()
-            # when backend returns a dict, wrap in list for DataFrame
+        response = requests.post(f"{API_URL}/loan-analysis", json=analysis_payload)
+        if response.status_code == 200:
+            data = response.json()
             if isinstance(data, dict):
                 data = [data]
             df = pd.DataFrame(data)
             st.dataframe(df)
-
             csv = df.to_csv(index=False).encode("utf-8")
             st.download_button(
                 label="Download Analysis as CSV file",

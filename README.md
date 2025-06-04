@@ -1,6 +1,7 @@
 # Advanced Salary Loan Calculator
 
 [![Streamlit App](https://img.shields.io/badge/Streamlit-Live%20Demo-brightgreen?logo=streamlit)](https://advanced-salary-loan-calculator-jyyojcbjax78j433sfeprm.streamlit.app/)
+[![FastAPI Backend](https://img.shields.io/badge/Backend-Live%20on%20Render-blue?logo=fastapi)](https://advanced-salary-loan-calculator.onrender.com)
 
 A web application for calculating salary-based loan and advance eligibility, repayments, and exporting loan analysis as CSV. Built with **Streamlit** (frontend) and **FastAPI** (backend).
 
@@ -8,7 +9,8 @@ A web application for calculating salary-based loan and advance eligibility, rep
 
 ## 🚀 Live Demo
 
-👉 [Try the app now!](https://advanced-salary-loan-calculator-jyyojcbjax78j433sfeprm.streamlit.app/)
+- **Frontend:** [Streamlit App](https://advanced-salary-loan-calculator-jyyojcbjax78j433sfeprm.streamlit.app/)
+- **Backend API:** [FastAPI on Render](https://advanced-salary-loan-calculator.onrender.com)
 
 ---
 
@@ -63,7 +65,7 @@ feature/
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/yourusername/Advanced-Salary-Loan-Calculator.git
+   git clone https://github.com/Shakiran-Nannyombi/Advanced-Salary-Loan-Calculator.git
    cd Advanced-Salary-Loan-Calculator
    ```
 
@@ -88,9 +90,30 @@ feature/
 
 ---
 
+## 🌐 Deploying the Backend on Render
+
+1. **Push your code to GitHub.**
+2. **Go to [Render](https://render.com/), create a new Web Service.**
+3. **Set the Root Directory to** `feature/fastapi-logic`.
+4. **Set the Start Command to:**
+   ```
+   uvicorn app:app --host 0.0.0.0 --port 10000
+   ```
+5. **Set the build command (if needed):**
+   ```
+   pip install -r requirements.txt
+   ```
+6. **Deploy!**  
+   Your backend will be available at a URL like:  
+   `https://advanced-salary-loan-calculator.onrender.com`
+
+7. **Update your Streamlit frontend to use this backend URL.**
+
+---
+
 ## 📦 Docker Usage
 
-You can use the provided `Dockerfile`s and `docker-compose.yml` for containerized deployment.
+You can use the provided `Dockerfile`s and `docker-compose.yml` for local containerized deployment.
 
 ---
 
