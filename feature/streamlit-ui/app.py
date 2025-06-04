@@ -23,21 +23,19 @@ st.divider()
 st.subheader("Loan Eligibility and Payment Details")
 
 
-def mainInputs(
-    gross_pay=0.0, loan_amount=0.0, loan_duration=1, variable_interest_rate=0.0
-):
+def mainInputs():
+    # Collect user inputs
     gross_pay = st.number_input(
-        "Gross Pay (in Shillings)", min_value=0.0, step=100.0, format="%.2f", help="shs"
+        "Gross Pay (in Shillings)", min_value=0.0, step=100.0, format="%.2f", help="Total earnings before deductions"
     )
     st.session_state.gross_pay = gross_pay
-    st.write("Note: Gross pay is the total earnings before any deductions.")
 
     loan_amount = st.number_input(
-        "Loan Amount (in Shillings)",
+        "Requested Advance Amount (in Shillings)",
         min_value=0.0,
         step=100.0,
         format="%.2f",
-        help="shs",
+        help="Amount you want as salary advance",
     )
     st.session_state.loan_amount = loan_amount
 
@@ -45,42 +43,39 @@ def mainInputs(
     st.session_state.loan_duration = loan_duration
 
     variable_interest_rate = st.number_input(
-        "Interest Rate (%)", min_value=0.0, step=0.1
+        "Interest Rate (%)", min_value=0.0, step=0.1, help="Variable interest rate"
     )
     st.session_state.variable_interest_rate = variable_interest_rate
-    st.write("Note: The interest rate is variable and may change over time.")
 
     if st.button("Calculate"):
-        # Call the backend to get maximum eligible advance amount and eligibility
+        # First, check advance eligibility
         advance_response = requests.post(
             f"{API_URL}/calculate-advance",
             json={
                 "gross_pay": gross_pay,
-                "advance_duration": 1, # Fixed duration for advance
-                "variable_interest_rate": variable_interest_rate,
+                "requested_advance": loan_amount,  # Match backend model
             },
         )
 
         if advance_response.status_code == 200:
             advance_result = advance_response.json()
-            max_advance_amount = advance_result.get('max_advance_amount', 0.0)
-            advance_eligible = advance_result.get("eligible", False)
+            max_advance = advance_result.get("max_advance_amount", 0.0)
+            eligible = advance_result.get("eligible", False)
 
-            st.write(f"Maximum Eligible Advance Amount (40% of Gross Pay): {max_advance_amount:.2f} Shillings")
-            st.write("Advance Eligibility:", advance_eligible)
+            st.write(f"Maximum Eligible Advance Amount (40% of Gross Pay): {max_advance:.2f} Shillings")
+            st.write("Advance Eligibility:", eligible)
 
-            if advance_eligible:
-                # If advance eligible, proceed to calculate loan details for the requested loan amount
+            if eligible:
+                # If eligible, calculate loan details
                 loan_response = requests.post(
                     f"{API_URL}/calculate-loan",
                     json={
-                        "gross_pay": gross_pay, # Still send gross_pay
+                        "gross_pay": gross_pay,
                         "loan_amount": loan_amount,
                         "loan_duration": loan_duration,
                         "variable_interest_rate": variable_interest_rate,
                     },
                 )
-
                 if loan_response.status_code == 200:
                     loan_result = loan_response.json()
                     st.write("Monthly Payment:", loan_result.get("monthly_payment", 0.0))
@@ -94,7 +89,6 @@ def mainInputs(
                 st.warning("You are not eligible for the salary advance loan.")
         else:
             st.error("Failed to check advance eligibility.")
-
 
 
 if __name__ == "__main__":
