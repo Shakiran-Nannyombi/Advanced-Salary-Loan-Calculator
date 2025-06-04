@@ -41,12 +41,10 @@ class LoanAnalysisRequest(BaseModel):
 
 @app.post("/calculate-advance", response_model=AdvanceResponse)
 def calculate_advance(data: AdvanceRequest):
-    max_advance = data.gross_pay * 0.4
-    eligible = (data.advance_amount <= max_advance and 
-               data.advance_amount > 0 and 
-               data.gross_pay > 0)
-    return AdvanceResponse(eligible=eligible, max_advance_amount=max_advance)
-
+    if data.gross_pay <= 0:
+        return AdvanceResponse(eligible=False)
+    max_advance_amount = data.gross_pay * 0.4
+    eligible = data.advance_amount <= max_advance_amount
 
 @app.post("/calculate-loan", response_model=LoanResponse)
 def calculate_loan(data: LoanRequest):
