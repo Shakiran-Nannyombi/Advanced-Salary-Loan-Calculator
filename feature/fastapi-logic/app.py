@@ -13,7 +13,6 @@ class LoanRequest(BaseModel):
 
 class AdvanceRequest(BaseModel):
     gross_pay: float
-    advance_amount: float
     advance_duration: int
     variable_interest_rate: float
 
@@ -41,10 +40,11 @@ class LoanAnalysisRequest(BaseModel):
 
 @app.post("/calculate-advance", response_model=AdvanceResponse)
 def calculate_advance(data: AdvanceRequest):
-    if data.gross_pay <= 0:
-        return AdvanceResponse(eligible=False)
-    max_advance_amount = data.gross_pay * 0.4
-    eligible = data.advance_amount <= max_advance_amount
+    max_advance = data.gross_pay * 0.4
+    # Eligibility is now based on whether a non-zero gross pay was provided
+    eligible = data.gross_pay > 0
+    return AdvanceResponse(eligible=eligible, max_advance_amount=max_advance)
+
 
 @app.post("/calculate-loan", response_model=LoanResponse)
 def calculate_loan(data: LoanRequest):

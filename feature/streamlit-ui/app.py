@@ -51,33 +51,36 @@ def mainInputs(
     st.write("Note: The interest rate is variable and may change over time.")
 
     if st.button("Calculate"):
-        # First call calculate-advance
+        # Call the backend to get maximum eligible advance amount and eligibility
         advance_response = requests.post(
             f"{API_URL}/calculate-advance",
             json={
                 "gross_pay": gross_pay,
-                "loan_amount": loan_amount,
-                "loan_duration": loan_duration,
+                "advance_duration": 1, # Fixed duration for advance
                 "variable_interest_rate": variable_interest_rate,
             },
         )
 
         if advance_response.status_code == 200:
             advance_result = advance_response.json()
-            st.write(f"Maximum Advance Allowed: {advance_result.get('max_advance_amount', 0.0)}")
-            st.write("Advance Eligibility:", advance_result.get("eligible", False))
+            max_advance_amount = advance_result.get('max_advance_amount', 0.0)
+            advance_eligible = advance_result.get("eligible", False)
 
-            if advance_result.get("eligible", False):
-                # Only call calculate-loan if advance eligible
+            st.write(f"Maximum Eligible Advance Amount (40% of Gross Pay): {max_advance_amount:.2f} Shillings")
+            st.write("Advance Eligibility:", advance_eligible)
+
+            if advance_eligible:
+                # If advance eligible, proceed to calculate loan details for the requested loan amount
                 loan_response = requests.post(
                     f"{API_URL}/calculate-loan",
                     json={
-                        "gross_pay": gross_pay,
+                        "gross_pay": gross_pay, # Still send gross_pay
                         "loan_amount": loan_amount,
                         "loan_duration": loan_duration,
                         "variable_interest_rate": variable_interest_rate,
                     },
                 )
+
                 if loan_response.status_code == 200:
                     loan_result = loan_response.json()
                     st.write("Monthly Payment:", loan_result.get("monthly_payment", 0.0))
