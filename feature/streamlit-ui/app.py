@@ -51,12 +51,6 @@ def mainInputs(
     st.session_state.variable_interest_rate = variable_interest_rate
     st.write("Note: The interest rate is variable and may change over time.")
 
-    # Calculate advance amount as 40% of gross pay and set duration to 1 month
-    advance_amount = gross_pay * 0.4
-    advance_duration = 1
-    st.session_state.advance_amount = advance_amount
-    st.session_state.advance_duration = advance_duration
-
     if st.button("Calculate"):
         # First calculating how much advance one can take
         advance_response = requests.post(
