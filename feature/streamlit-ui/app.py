@@ -33,6 +33,12 @@ def mainInputs(
     st.session_state.gross_pay = gross_pay
     st.write("Note: Gross pay is the total earnings before any deductions.")
 
+    # Calculate advance amount as 40% of gross pay and set duration to 1 month
+    advance_amount = gross_pay * 0.4
+    advance_duration = 1
+    st.session_state.advance_amount = advance_amount
+    st.session_state.advance_duration = advance_duration
+
     loan_amount = st.number_input(
         "Loan Amount (in Shillings)",
         min_value=0.0,
