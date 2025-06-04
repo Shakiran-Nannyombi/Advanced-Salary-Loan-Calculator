@@ -17,7 +17,6 @@ employee_id = st.text_input("Employee ID")
 pay_frequency = st.selectbox("Pay Frequency", ["Monthly", "Bi-Weekly", "Weekly"])
 st.write("Note: The pay frequency means how often you receive your salary.")
 
-
 st.divider()
 
 # Function to calculate loan eligibility and payment details
@@ -32,15 +31,6 @@ def mainInputs(
     )
     st.session_state.gross_pay = gross_pay
     st.write("Note: Gross pay is the total earnings before any deductions.")
-
-    # Calculate advance amount as 40% of gross pay and set duration to 1 month
-    max_advance_amount = gross_pay * 0.4
-    st.write(f"Maximum Eligible Advance Amount (40% of Gross Pay): {max_advance_amount:.2f} Shillings")
-
-    # Use the user's requested loan amount, duration, and interest rate for calculation
-    loan_amount_for_calc = loan_amount
-    loan_duration_for_calc = loan_duration
-    interest_rate_for_calc = variable_interest_rate
 
     loan_amount = st.number_input(
         "Loan Amount (in Shillings)",
@@ -60,34 +50,48 @@ def mainInputs(
     st.session_state.variable_interest_rate = variable_interest_rate
     st.write("Note: The interest rate is variable and may change over time.")
 
-    if st.button("Calculate Loan Details"):
-        # Check if the requested loan amount exceeds the maximum eligible advance amount
-        # This is just a warning/note for the user, calculation still proceeds for the requested amount
-        if loan_amount_for_calc > max_advance_amount:
-            st.warning("Your requested Loan Amount exceeds the Maximum Eligible Advance Amount (40% of Gross Pay). The calculation below is for the full amount you requested.")
-
-        # Call calculate-loan endpoint with user's inputs
-        loan_response = requests.post(
-            f"{API_URL}/calculate-loan",
+    if st.button("Calculate"):
+        # First call calculate-advance
+        advance_response = requests.post(
+            f"{API_URL}/calculate-advance",
             json={
-                "gross_pay": gross_pay, # Still send gross_pay as it might be used for other checks later
-                "loan_amount": loan_amount_for_calc,
-                "loan_duration": loan_duration_for_calc,
-                "variable_interest_rate": interest_rate_for_calc,
+                "gross_pay": gross_pay,
+                "loan_amount": loan_amount,
+                "loan_duration": loan_duration,
+                "variable_interest_rate": variable_interest_rate,
             },
         )
 
-        if loan_response.status_code == 200:
-            loan_result = loan_response.json()
-            st.write(
-                "Monthly Payment:", loan_result.get("monthly_payment", 0.0)
-            )
-            st.write(
-                "Total Payment with Interest:",
-                loan_result.get("total_payment_with_interest", 0.0),
-            )
+        if advance_response.status_code == 200:
+            advance_result = advance_response.json()
+            st.write(f"Maximum Advance Allowed: {advance_result.get('max_advance_amount', 0.0)}")
+            st.write("Advance Eligibility:", advance_result.get("eligible", False))
+
+            if advance_result.get("eligible", False):
+                # Only call calculate-loan if advance eligible
+                loan_response = requests.post(
+                    f"{API_URL}/calculate-loan",
+                    json={
+                        "gross_pay": gross_pay,
+                        "loan_amount": loan_amount,
+                        "loan_duration": loan_duration,
+                        "variable_interest_rate": variable_interest_rate,
+                    },
+                )
+                if loan_response.status_code == 200:
+                    loan_result = loan_response.json()
+                    st.write("Monthly Payment:", loan_result.get("monthly_payment", 0.0))
+                    st.write(
+                        "Total Payment with Interest:",
+                        loan_result.get("total_payment_with_interest", 0.0),
+                    )
+                else:
+                    st.error("Failed to calculate loan details.")
+            else:
+                st.warning("You are not eligible for the salary advance loan.")
         else:
-            st.error("Failed to calculate loan details.")
+            st.error("Failed to check advance eligibility.")
+
 
 
 if __name__ == "__main__":
@@ -129,13 +133,17 @@ if st.button("Generate Analysis & Download CSV"):
                 "total_payment_with_interest", 0.0
             ),
         }
-        response = requests.post(f"{API_URL}/loan-analysis", json=analysis_payload)
-        if response.status_code == 200:
-            data = response.json()
+        analysis_response = requests.post(
+            f"{API_URL}/loan-analysis", json=analysis_payload
+        )
+        if analysis_response.status_code == 200:
+            data = analysis_response.json()
+            # when backend returns a dict, wrap in list for DataFrame
             if isinstance(data, dict):
                 data = [data]
             df = pd.DataFrame(data)
             st.dataframe(df)
+
             csv = df.to_csv(index=False).encode("utf-8")
             st.download_button(
                 label="Download Analysis as CSV file",
@@ -148,10 +156,10 @@ if st.button("Generate Analysis & Download CSV"):
     else:
         st.error("Failed to calculate loan details.")
 
-    st.markdown(
-        '<a href="#" style="color:red; text-decoration:underline;" onclick="window.location.reload(); return false;">Reset values</a>',
-        unsafe_allow_html=True,
-    )
+st.markdown(
+    '<a href="#" style="color:red; text-decoration:underline;" onclick="window.location.reload(); return false;">Reset values</a>',
+    unsafe_allow_html=True,
+)
 
 # Footer section
 st.markdown("---")
