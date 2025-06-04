@@ -34,10 +34,13 @@ def mainInputs(
     st.write("Note: Gross pay is the total earnings before any deductions.")
 
     # Calculate advance amount as 40% of gross pay and set duration to 1 month
-    advance_amount = gross_pay * 0.4
-    advance_duration = 1
-    st.session_state.advance_amount = advance_amount
-    st.session_state.advance_duration = advance_duration
+    max_advance_amount = gross_pay * 0.4
+    st.write(f"Maximum Eligible Advance Amount (40% of Gross Pay): {max_advance_amount:.2f} Shillings")
+
+    # Use the user's requested loan amount, duration, and interest rate for calculation
+    loan_amount_for_calc = loan_amount
+    loan_duration_for_calc = loan_duration
+    interest_rate_for_calc = variable_interest_rate
 
     loan_amount = st.number_input(
         "Loan Amount (in Shillings)",
@@ -57,49 +60,34 @@ def mainInputs(
     st.session_state.variable_interest_rate = variable_interest_rate
     st.write("Note: The interest rate is variable and may change over time.")
 
-    if st.button("Calculate"):
-        # First calculating how much advance one can take
-        advance_response = requests.post(
-            f"{API_URL}/calculate-advance",
+    if st.button("Calculate Loan Details"):
+        # Check if the requested loan amount exceeds the maximum eligible advance amount
+        # This is just a warning/note for the user, calculation still proceeds for the requested amount
+        if loan_amount_for_calc > max_advance_amount:
+            st.warning("Your requested Loan Amount exceeds the Maximum Eligible Advance Amount (40% of Gross Pay). The calculation below is for the full amount you requested.")
+
+        # Call calculate-loan endpoint with user's inputs
+        loan_response = requests.post(
+            f"{API_URL}/calculate-loan",
             json={
-                "gross_pay": gross_pay,
-                "advance_amount": advance_amount,
-                "advance_duration": advance_duration,
-                "variable_interest_rate": variable_interest_rate,
+                "gross_pay": gross_pay, # Still send gross_pay as it might be used for other checks later
+                "loan_amount": loan_amount_for_calc,
+                "loan_duration": loan_duration_for_calc,
+                "variable_interest_rate": interest_rate_for_calc,
             },
         )
 
-        if advance_response.status_code == 200:
-            advance_result = advance_response.json()
-            st.write(f"Maximum Advance Amount Available: {advance_result.get('max_advance_amount', 0.0):.2f} Shillings")
-            st.write("Advance Eligibility:", advance_result.get("eligible", False))
-
-            if advance_result.get("eligible", False):
-                # Only call calculate-loan if advance eligible
-                loan_response = requests.post(
-                    f"{API_URL}/calculate-loan",
-                    json={
-                        "gross_pay": gross_pay,
-                        "loan_amount": loan_amount,
-                        "loan_duration": loan_duration,
-                        "variable_interest_rate": variable_interest_rate,
-                    },
-                )
-                if loan_response.status_code == 200:
-                    loan_result = loan_response.json()
-                    st.write(
-                        "Monthly Payment:", loan_result.get("monthly_payment", 0.0)
-                    )
-                    st.write(
-                        "Total Payment with Interest:",
-                        loan_result.get("total_payment_with_interest", 0.0),
-                    )
-                else:
-                    st.error("Failed to calculate loan details.")
-            else:
-                st.warning("You are not eligible for the salary advance loan.")
+        if loan_response.status_code == 200:
+            loan_result = loan_response.json()
+            st.write(
+                "Monthly Payment:", loan_result.get("monthly_payment", 0.0)
+            )
+            st.write(
+                "Total Payment with Interest:",
+                loan_result.get("total_payment_with_interest", 0.0),
+            )
         else:
-            st.error("Failed to check advance eligibility.")
+            st.error("Failed to calculate loan details.")
 
 
 if __name__ == "__main__":
