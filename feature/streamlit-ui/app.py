@@ -53,7 +53,8 @@ def mainInputs():
             f"{API_URL}/calculate-advance",
             json={
                 "gross_pay": gross_pay,
-                "requested_advance": loan_amount,  # Match backend model
+                "advance_duration": 1, # Fixed duration for advance
+                "variable_interest_rate": variable_interest_rate,
             },
         )
 
