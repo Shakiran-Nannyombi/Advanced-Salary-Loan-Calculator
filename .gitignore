@@ -41,4 +41,11 @@ wheels/
 
 # Docker
 .docker/
-docker-compose.override.yml 
+docker-compose.override.yml
+
+# SSH Keys
+*.pem
+*.key
+id_rsa*
+*.pub
+.ssh/ 
