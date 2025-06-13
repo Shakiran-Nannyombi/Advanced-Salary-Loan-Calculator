@@ -15,6 +15,14 @@ The application consists of two main components:
 - Compound interest computations
 - Interactive UI with real-time results
 
+## 📸 Screenshots
+
+### Main Interface
+![Main Interface](image1.png)
+
+### Loan Calculator
+![Loan Calculator](image%20copy.png)
+
 ## 🛠️ Tech Stack
 
 - **Frontend**: Streamlit
@@ -94,6 +102,79 @@ Advanced-Salary-Loan-Calculator/
    - Calculates loan details and interest
    - Input: Loan amount, interest rate, term
    - Output: Total repayable amount, schedule
+
+## 🚀 Deployment
+
+### AWS EC2 Deployment
+
+1. **Launch EC2 Instance**
+   - Region: Europe (Milan) - eu-south-1
+   - Instance Type: t2.micro
+   - AMI: Ubuntu 22.04 LTS
+   - Security Group: Allow HTTP (80) and HTTPS (443)
+
+2. **Domain Setup**
+   - Domain: salaryadvance.duckdns.org
+   - DNS: Point to EC2 instance IP
+
+3. **Server Setup**
+   ```bash
+   # Install dependencies
+   sudo apt update
+   sudo apt install -y docker.io docker-compose nginx certbot python3-certbot-nginx
+
+   # Add user to docker group
+   sudo usermod -aG docker ubuntu
+   sudo systemctl restart docker
+
+   # Configure Nginx
+   sudo nano /etc/nginx/sites-available/salaryadvance.duckdns.org
+   ```
+
+4. **Nginx Configuration**
+   ```nginx
+   server {
+       listen 80;
+       server_name salaryadvance.duckdns.org;
+
+       location / {
+           proxy_pass http://localhost:8501;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection 'upgrade';
+           proxy_set_header Host $host;
+           proxy_cache_bypass $http_upgrade;
+       }
+   }
+   ```
+
+5. **SSL Setup**
+   ```bash
+   sudo ln -s /etc/nginx/sites-available/salaryadvance.duckdns.org /etc/nginx/sites-enabled/
+   sudo nginx -t
+   sudo systemctl restart nginx
+   sudo certbot --nginx -d salaryadvance.duckdns.org
+   ```
+
+6. **Deploy Application**
+   ```bash
+   # Clone repository
+   git clone <repository-url>
+   cd Advanced-Salary-Loan-Calculator
+
+   # Start application
+   docker-compose up -d
+   ```
+
+7. **Access Application**
+   - Production URL: https://salaryadvance.duckdns.org
+   - SSL Certificate: Auto-renewing Let's Encrypt certificate
+
+### Maintenance
+
+- SSL certificates auto-renew every 90 days
+- Monitor application logs: `docker-compose logs -f`
+- Update application: `git pull && docker-compose up -d --build`
 
 ## 🔐 Security
 
