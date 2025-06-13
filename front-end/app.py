@@ -61,7 +61,7 @@ if customer_submit:
 
 # Calculator Selection
 st.subheader("Select Calculator Type")
-tab1, tab2 ,tab3= st.tabs(["Salary Advance Calculator", "Loan Calculator","Loan Application Form"])
+tab1, tab2 = st.tabs(["Salary Advance Calculator", "Loan Calculator"])
 
 # Salary Advance Calculator
 with tab1:
@@ -176,10 +176,3 @@ with tab2:
                     )
         except Exception as e:
             st.error(f"Error calculating loan: {str(e)}")
-
-# Loan Application Form
-with tab3:
-    st.header("Loan Application Form")
-    st.write("Please fill out the loan application form to proceed with your loan request.")
-    
-   
