@@ -2,15 +2,14 @@ from fastapi import APIRouter, HTTPException
 import json
 import os
 from models import CustomerInfo, CustomerResponse
-from typing import Dict
 
 router = APIRouter()
 
 # File path for storing customer data
 DATA_FILE = "/data/customer_data.json"
 
-def load_customer_data() -> Dict:
-    """Load customer data from JSON file."""
+# Functions to load and read customer data from a JSON file
+def load_customer_data():
     try:
         if os.path.exists(DATA_FILE):
             with open(DATA_FILE, 'r') as f:
@@ -20,10 +19,10 @@ def load_customer_data() -> Dict:
         print(f"Error loading customer data: {e}")
         return {}
 
-def save_customer_data(data: Dict) -> None:
-    """Save customer data to JSON file."""
+# Function to save customer data to a JSON file
+def save_customer_data(data):
     try:
-        # Ensure the directory exists
+        # Checking if the directory exists
         os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
         with open(DATA_FILE, 'w') as f:
             json.dump(data, f, indent=4)
@@ -31,9 +30,8 @@ def save_customer_data(data: Dict) -> None:
         print(f"Error saving customer data: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to save customer data: {str(e)}")
 
-@router.post("/save-customer", response_model=CustomerResponse)
-async def save_customer_info(customer: CustomerInfo):
-    """Save customer information."""
+@router.post("/save-customer")
+def save_customer_info(customer: CustomerInfo):
     try:
         # Load existing data
         customer_data = load_customer_data()
