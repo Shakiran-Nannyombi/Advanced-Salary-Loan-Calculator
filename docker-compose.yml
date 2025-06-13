@@ -33,5 +33,4 @@ volumes:
 networks:
   app_network:
     driver: bridge
-    internal: true  # This protects the network from external access
-    attachable: true  # Allows other containers to attach to this network if needed
+    attachable: true
