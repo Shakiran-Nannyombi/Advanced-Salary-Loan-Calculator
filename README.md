@@ -50,7 +50,7 @@ docker compose up --build
 
 ```
 Advanced-Salary-Loan-Calculator/
-├── frontend/
+├── front-end/
 │   ├── Dockerfile
 │   ├── requirements.txt
 │   └── app.py
@@ -59,13 +59,16 @@ Advanced-Salary-Loan-Calculator/
 │   ├── requirements.txt
 │   └── main.py
 ├── docker-compose.yml
+├── test-compose.yml
+├── .gitignore
+├── LICENSE
 └── README.md
 ```
 
 ## 🔧 Development
 
 ### Frontend Development
-- Located in `frontend/`
+- Located in `front-end/`
 - Built with Streamlit
 - Handles UI and API calls
 
@@ -73,6 +76,10 @@ Advanced-Salary-Loan-Calculator/
 - Located in `backend/`
 - Built with FastAPI
 - Handles calculations and business logic
+
+### Testing
+- Use `test-compose.yml` for running tests in an isolated environment
+- Run tests using: `docker compose -f test-compose.yml up`
 
 ## 📝 API Documentation
 
