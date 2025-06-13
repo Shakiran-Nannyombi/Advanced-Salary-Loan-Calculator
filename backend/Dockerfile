@@ -8,7 +8,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Creating data directory and set permissions
+# Creating data directory and setting permissions
 RUN mkdir -p /data && chmod 777 /data
 
 EXPOSE 8000

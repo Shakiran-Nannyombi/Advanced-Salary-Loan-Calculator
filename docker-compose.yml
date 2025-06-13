@@ -11,19 +11,27 @@ services:
       - BACKEND_URL=http://backend:8000
     depends_on:
       - backend
+    networks:
+      - app_network
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
     volumes:
       - ./backend:/app
       - customer_data:/data
     environment:
       - ENVIRONMENT=development
+    networks:
+      - app_network
 
 volumes:
   customer_data:
-    name: loan_calculator_customer_data 
+    name: loan_calculator_customer_data
+
+networks:
+  app_network:
+    driver: bridge
+    internal: true  # This protects the network from external access
+    attachable: true  # Allows other containers to attach to this network if needed
