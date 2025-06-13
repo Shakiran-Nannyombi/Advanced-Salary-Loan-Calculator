@@ -105,6 +105,9 @@ Advanced-Salary-Loan-Calculator/
 
 ## 🚀 Deployment
 
+### Live Demo
+Visit the live application at: [https://salaryadvance.duckdns.org](https://salaryadvance.duckdns.org)
+
 ### AWS EC2 Deployment
 
 1. **Launch EC2 Instance**
