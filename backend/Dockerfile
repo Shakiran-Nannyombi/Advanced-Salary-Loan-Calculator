@@ -1,16 +1,21 @@
 FROM python:3.12
 
+# Create a non-root user and group
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+
 WORKDIR /app
 
 COPY requirements.txt .
-
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Creating data directory and setting permissions
-RUN mkdir -p /data && chmod 777 /data
+# Set ownership of /app and /data to the non-root user
+RUN mkdir -p /data && chown -R appuser:appgroup /app /data
+
+# Switch to non-root user
+USER appuser
 
 EXPOSE 8000
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"] 
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

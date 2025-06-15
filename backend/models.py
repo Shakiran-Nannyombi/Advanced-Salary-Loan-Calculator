@@ -1,5 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
+from pydantic import BaseModel, EmailStr
 
 class SalaryAdvanceRequest(BaseModel):
     gross_salary: float
@@ -42,7 +41,7 @@ class CustomerInfo(BaseModel):
     address: str = Field(..., min_length=5, max_length=200)
     monthly_income: float = Field(..., gt=0)
     employment_status: str = Field(..., min_length=1, max_length=50)
-    employer_name: Optional[str] = Field(None, max_length=100)
+    employer_name: str = Field(..., max_length=100)
     loan_amount: float = Field(..., gt=0)
     loan_purpose: str = Field(..., min_length=1, max_length=200)
 
@@ -52,12 +51,11 @@ class CustomerResponse(BaseModel):
 class CustomerData(BaseModel):
     full_name: str
     employment_status: str
-    employee_id: str | None = None
-    company_name: str | None = None
-    email: str
+    employee_id: str
+    company_name: str
+    email: EmailStr
     phone_number: str
 
 class CustomerDataResponse(BaseModel):
     customer_data: CustomerData | None = None
     message: str
-    

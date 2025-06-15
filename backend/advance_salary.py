@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from models import SalaryAdvanceRequest, SalaryAdvanceResponse
 
 router = APIRouter()
@@ -13,11 +13,15 @@ def convert_to_monthly(salary: float, frequency: str) -> float:
         "monthly": 1,
         "biweekly": 26 / 12,
         "weekly": 52 / 12
-    } 
+    }
     return salary * conversion_rates[frequency.lower()]
 
 @router.post("/calculate_salary_advance", response_model=SalaryAdvanceResponse)
 def calculate_advance(request: SalaryAdvanceRequest):
+    if request.gross_salary <= 0:
+        raise HTTPException(status_code=400, detail="Gross salary must be greater than zero.")
+    if request.requested_amount <= 0:
+        raise HTTPException(status_code=400, detail="Requested amount must be greater than zero.")
 
     # Calculate monthly salary based on pay frequency
     monthly_salary = convert_to_monthly(request.gross_salary, request.pay_frequency)
