@@ -1,6 +1,8 @@
 import streamlit as st
 import requests
 import pandas as pd
+import re
+import time
 
 # Page Configuration
 st.set_page_config(
@@ -86,31 +88,32 @@ with tab1:
         submit = st.form_submit_button("Calculate Advance")
 
     if submit and gross_salary and requested_amount:
-        try:
-            response = requests.post(
-                "http://backend:8000/api/v1/calculate_salary_advance",
-                json={
-                    "gross_salary": gross_salary,
-                    "pay_frequency": pay_frequency,
-                    "requested_amount": requested_amount
-                }
-            )
-            if response.ok:
-                result = response.json()
-                if result['eligible']:
-                    st.success(f"Congratulations {full_name}, you are eligible for an advance!")
-                    st.info("Calculation Results")
-                    cols = st.columns(4)
-                    with cols[0]: st.metric("Maximum Advance", f"${result['max_advance']:,.2f}")
-                    with cols[1]: st.metric("Approved Amount", f"${result['approved_amount']:,.2f}")
-                    with cols[2]: st.metric("Fee", f"${result['fee']:,.2f}")
-                    with cols[3]: st.metric("Total Repayable", f"${result['total_repayable']:,.2f}")
-                    st.write("You can proceed to request the advance amount in the loan application form.")
-                else:
-                    st.warning(f"⚠️ Apologies {full_name}, your requested amount ${requested_amount:,.2f} exceeds the maximum advance available.")
-                    st.warning(f"Maximum Advance Available: ${result['max_advance']:,.2f}")
-        except Exception as e:
-            st.error(f"Error calculating advance: {str(e)}")
+        with st.spinner("Calculating, please wait..."):
+            try:
+                response = requests.post(
+                    "http://backend:8000/api/v1/calculate_salary_advance",
+                    json={
+                        "gross_salary": gross_salary,
+                        "pay_frequency": pay_frequency,
+                        "requested_amount": requested_amount
+                    }
+                )
+                if response.ok:
+                    result = response.json()
+                    if result['eligible']:
+                        st.success(f"Congratulations {full_name}, you are eligible for an advance!")
+                        st.info("Calculation Results")
+                        cols = st.columns(4)
+                        with cols[0]: st.metric("Maximum Advance", f"${result['max_advance']:,.2f}")
+                        with cols[1]: st.metric("Approved Amount", f"${result['approved_amount']:,.2f}")
+                        with cols[2]: st.metric("Fee", f"${result['fee']:,.2f}")
+                        with cols[3]: st.metric("Total Repayable", f"${result['total_repayable']:,.2f}")
+                        st.write("You can proceed to request the advance amount in the loan application form.")
+                    else:
+                        st.warning(f"⚠️ Apologies {full_name}, your requested amount ${requested_amount:,.2f} exceeds the maximum advance available.")
+                        st.warning(f"Maximum Advance Available: ${result['max_advance']:,.2f}")
+            except Exception as e:
+                st.error(f"Error calculating advance: {str(e)}")
 
 # Loan Calculator
 with tab2:
@@ -133,46 +136,107 @@ with tab2:
         submit = st.form_submit_button("Calculate Loan")
 
     if submit and loan_amount and interest_rate and loan_term:
-        try:
-            response = requests.post(
-                "http://backend:8000/api/v1/calculate_loan",
-                json={
-                    "loan_amount": loan_amount,
-                    "interest_rate": interest_rate,
-                    "loan_term_months": loan_term
-                }
-            )
-            if response.ok:
-                result = response.json()
-                st.success(f"Congratulations {full_name}, your loan calculation is complete!")
-                st.info("Calculation Results")
-                cols = st.columns(3)
-                with cols[0]: st.metric("Monthly Payment", f"${result['monthly_payment']:,.2f}")
-                with cols[1]: st.metric("Total Interest", f"${result['total_interest']:,.2f}")
-                with cols[2]: st.metric("Total Payment", f"${result['total_payment']:,.2f}")
-                
-                # Get payment schedule
-                schedule_response = requests.post(
-                    "http://backend:8000/api/v1/generate_payment_schedule",
+        with st.spinner("Calculating, please wait..."):
+            try:
+                response = requests.post(
+                    "http://backend:8000/api/v1/calculate_loan",
                     json={
-                        "principal": loan_amount,
-                        "monthly_rate": interest_rate / 100 / 12,
-                        "term_months": loan_term,
-                        "monthly_payment": result['monthly_payment']
+                        "loan_amount": loan_amount,
+                        "interest_rate": interest_rate,
+                        "loan_term_months": loan_term
                     }
                 )
-                if schedule_response.ok:
-                    schedule = schedule_response.json()
-                    st.subheader("Payment Schedule")
-                    df = pd.DataFrame(schedule['schedule'])
-                    st.dataframe(df, use_container_width=True)
-                    csv = df.to_csv(index=False)
-                    st.markdown("Download the payment schedule as CSV and submit it in your loan application.")
-                    st.download_button(
-                        label="Download Payment Schedule",
-                        data=csv,
-                        file_name='payment_schedule.csv',
-                        mime='text/csv'
+                if response.ok:
+                    result = response.json()
+                    st.success(f"Congratulations {full_name}, your loan calculation is complete!")
+                    st.info("Calculation Results")
+                    cols = st.columns(3)
+                    with cols[0]: st.metric("Monthly Payment", f"${result['monthly_payment']:,.2f}")
+                    with cols[1]: st.metric("Total Interest", f"${result['total_interest']:,.2f}")
+                    with cols[2]: st.metric("Total Payment", f"${result['total_payment']:,.2f}")
+                    
+                    # Get payment schedule
+                    schedule_response = requests.post(
+                        "http://backend:8000/api/v1/generate_payment_schedule",
+                        json={
+                            "principal": loan_amount,
+                            "monthly_rate": interest_rate / 100 / 12,
+                            "term_months": loan_term,
+                            "monthly_payment": result['monthly_payment']
+                        }
                     )
-        except Exception as e:
-            st.error(f"Error calculating loan: {str(e)}")
+                    if schedule_response.ok:
+                        schedule = schedule_response.json()
+                        st.subheader("Payment Schedule")
+                        df = pd.DataFrame(schedule['schedule'])
+                        st.dataframe(df, use_container_width=True)
+                        csv = df.to_csv(index=False)
+                        st.markdown("Download the payment schedule as CSV and submit it in your loan application.")
+                        st.download_button(
+                            label="Download Payment Schedule",
+                            data=csv,
+                            file_name='payment_schedule.csv',
+                            mime='text/csv'
+                        )
+            except Exception as e:
+                st.error(f"Error calculating loan: {str(e)}")
+
+def is_valid_email(email):
+    return re.match(r"[^@]+@[^@]+\.[^@]+", email)
+
+# In your form submission logic:
+if not is_valid_email(email):
+    st.error("Please enter a valid email address.")
+    st.stop()
+if gross_salary <= 0:
+    st.error("Gross salary must be positive.")
+    st.stop()
+
+def post_with_retry(url, data, retries=3, delay=2):
+    for attempt in range(retries):
+        try:
+            response = requests.post(url, json=data, timeout=10)
+            response.raise_for_status()
+            return response
+        except Exception:
+            if attempt < retries - 1:
+                time.sleep(delay)
+            else:
+                return None
+
+# Salary Advance Calculation for error handling if backend is down
+api_url = "http://your-backend-url/api/v1/calculate_salary_advance"
+payload = {"gross_salary": gross_salary, "email": email}
+
+try:
+    response = post_with_retry(api_url, payload)
+    if response and response.status_code == 200:
+        result = response.json()
+        st.success(f"Max Advance: {result['max_advance']}")
+    else:
+        st.error("Could not connect to the server. Please try again later.")
+except Exception:
+    st.error("Could not connect to the server. Please check your connection or try again later.")
+
+import streamlit as st
+
+@st.cache_data(ttl=60)
+def check_backend_health():
+    try:
+        r = requests.get("http://your-backend-url/health", timeout=5)
+        return r.status_code == 200
+    except Exception:
+        return False
+
+if not check_backend_health():
+    st.warning("Backend service is currently unavailable. Some features may not work.")
+    def local_salary_advance(gross_salary):
+        return gross_salary * 0.5
+
+    if not check_backend_health():
+        st.info("Using local calculation. Results are estimates.")
+        max_advance = local_salary_advance(gross_salary)
+        st.metric("Estimated Max Advance", f"{max_advance:,.2f}")
+    else:
+        # Call backend as usual
+        pass

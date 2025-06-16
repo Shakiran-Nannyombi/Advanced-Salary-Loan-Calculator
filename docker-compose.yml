@@ -1,32 +1,29 @@
 services:
   frontend:
-    build: 
-      context: ./front-end
-      dockerfile: Dockerfile
+    build: ./front-end
     ports:
       - "8501:8501"
     volumes:
       - ./front-end:/app
-    environment:
-      - BACKEND_URL=http://backend:8000
+    env_file:
+      - .env
     depends_on:
       - backend
     networks:
       - app_network
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    build: ./backend
     volumes:
       - ./backend:/app
       - customer_data:/data
-    environment:
-      - ENVIRONMENT=development
+    env_file:
+      - .env
     networks:
       - app_network
 
 volumes:
+  frontend_venv:
   customer_data:
     name: loan_calculator_customer_data
 
