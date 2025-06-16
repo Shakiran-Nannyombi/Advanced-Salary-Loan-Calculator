@@ -28,7 +28,7 @@ with st.form("customer_info", clear_on_submit=True):
 
     with col1:
         full_name = st.text_input("FULL NAME", placeholder="Enter your full name", key="customer_full_name")
-        employment_status = st.selectbox("EMPLOYMENT STATUS",
+        employment_status = st.selectbox("EMPLOYMENT STATUS", 
             options=["Employed", "Self-Employed", "Unemployed"], key="customer_employment_status")
         st.markdown("<div style='color: gray;'>Note: If you are employed, please provide your employee ID and company name.</div>", unsafe_allow_html=True)
         employee_id = st.text_input("EMPLOYEE ID", placeholder="Enter your employee ID", key="customer_employee_id")
