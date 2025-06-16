@@ -19,13 +19,16 @@ The application consists of two main components:
 ## 📸 Screenshots
 
 ### Main Interface
-![Main Interface](image1.png)
+![Main Interface](image.png)
 
 ### Salary Advance Calculator
-![Salary Advance Calculator](image%20copy.png)
+![Salary Advance Calculator](image1.png)
 
 ### Loan Calculator
-![Loan Calculator](image.png)
+![Loan Calculator](image2.png)
+
+### Loan Application
+![Loan Application](image3.png)
 
 ## 🛠️ Tech Stack
 
