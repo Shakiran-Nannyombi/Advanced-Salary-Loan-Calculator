@@ -3,7 +3,7 @@ import os
 import logging
 from fastapi import APIRouter, HTTPException
 from filelock import FileLock
-from .models import CustomerInfo, CustomerResponse
+from models import CustomerInfo, CustomerResponse
 
 router = APIRouter()
 DATA_FILE = "data/customer_data.json"

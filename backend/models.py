@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 class SalaryAdvanceRequest(BaseModel):
     gross_salary: float
@@ -36,14 +36,11 @@ class PaymentScheduleResponse(BaseModel):
 
 class CustomerInfo(BaseModel):
     full_name: str = Field(..., min_length=1, max_length=100)
-    email: EmailStr
-    phone: str = Field(..., min_length=10, max_length=15)
-    address: str = Field(..., min_length=5, max_length=200)
-    monthly_income: float = Field(..., gt=0)
     employment_status: str = Field(..., min_length=1, max_length=50)
-    employer_name: str = Field(..., max_length=100)
-    loan_amount: float = Field(..., gt=0)
-    loan_purpose: str = Field(..., min_length=1, max_length=200)
+    employee_id: str | None = None
+    company_name: str | None = None
+    email: EmailStr
+    phone_number: str = Field(..., min_length=10, max_length=15)
 
 class CustomerResponse(BaseModel):
     message: str
@@ -58,4 +55,14 @@ class CustomerData(BaseModel):
 
 class CustomerDataResponse(BaseModel):
     customer_data: CustomerData | None = None
+    message: str
+
+class LoanApplicationRequest(BaseModel):
+    house_ownership: str
+    salary_deduction_approval: str
+    dependents: int
+    employment_duration: str
+    payment_schedule_csv: str # This will hold the base64 encoded CSV string
+
+class LoanApplicationResponse(BaseModel):
     message: str

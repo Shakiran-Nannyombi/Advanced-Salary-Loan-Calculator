@@ -4,6 +4,7 @@ from advance_salary import router as salary_router
 from customer_info import router as customer_router
 from loan_calculation import router as loan_router
 from payment_schedule import router as payment_router
+from loan_application import router as loan_application_router
 
 app = FastAPI(title="Salary Advance Calculator API")
 
@@ -17,10 +18,11 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(salary_router, prefix="/api/v1")
+app.include_router(salary_router, prefix="/api/v2")
 app.include_router(customer_router, prefix="/api/v1")
-app.include_router(loan_router, prefix="/api/v1")
-app.include_router(payment_router, prefix="/api/v1")
+app.include_router(loan_router, prefix="/api/v3")
+app.include_router(payment_router, prefix="/api/v4")
+app.include_router(loan_application_router, prefix="/api/v5")
 
 @app.get("/")
 async def root():

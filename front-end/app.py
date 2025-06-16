@@ -3,6 +3,7 @@ import requests
 import pandas as pd
 import re
 import time
+import base64
 
 # Page Configuration
 st.set_page_config(
@@ -22,27 +23,27 @@ st.divider()
 # Customer Information Form
 st.subheader("Customer Information")
 
-with st.form("customer_info"):
+with st.form("customer_info", clear_on_submit=True):
     col1, col2 = st.columns(2)
 
     with col1:
-        full_name = st.text_input("FULL NAME", placeholder="Enter your full name")
-        employment_status = st.selectbox("EMPLOYMENT STATUS", 
-            options=["Employed", "Self-Employed", "Unemployed"])
+        full_name = st.text_input("FULL NAME", placeholder="Enter your full name", key="customer_full_name")
+        employment_status = st.selectbox("EMPLOYMENT STATUS",
+            options=["Employed", "Self-Employed", "Unemployed"], key="customer_employment_status")
         st.markdown("<div style='color: gray;'>Note: If you are employed, please provide your employee ID and company name.</div>", unsafe_allow_html=True)
-        employee_id = st.text_input("EMPLOYEE ID", placeholder="Enter your employee ID")
+        employee_id = st.text_input("EMPLOYEE ID", placeholder="Enter your employee ID", key="customer_employee_id")
 
     with col2:
-        company_name = st.text_input("COMPANY NAME", placeholder="Enter your company name")
-        email = st.text_input("EMAIL", placeholder="Enter your email address")
-        phone_number = st.text_input("PHONE NUMBER", placeholder="Enter your phone number")
+        company_name = st.text_input("COMPANY NAME", placeholder="Enter your company name", key="customer_company_name")
+        email = st.text_input("EMAIL", placeholder="Enter your email address", key="customer_email")
+        phone_number = st.text_input("PHONE NUMBER", placeholder="Enter your phone number", key="customer_phone_number")
     
     customer_submit = st.form_submit_button("Save Customer Information")
 
 if customer_submit:
     # Check if any required field is empty
-    if not all([full_name, email, phone_number]) or (employment_status == "Employed" and not all([company_name, employee_id])):
-        st.error("Please fill in all required fields. No empty fields are allowed.")
+    if not all([full_name, email, phone_number]) or (employment_status == "Employed" and not all([company_name, employee_id])) or (employment_status != "Employed" and (company_name or employee_id)):
+        st.error("Please fill in all required fields and ensure no extra fields are filled if not applicable. No empty fields are allowed.")
     else:
         try:
             response = requests.post(
@@ -57,13 +58,19 @@ if customer_submit:
                 }
             )
             if response.ok:
-                st.success(response.json()["message"])
+                st.session_state["show_customer_success"] = True
+                st.session_state["full_name"] = full_name # Store full_name in session state
+            else:
+                st.error(f"Error saving customer information: {response.json().get('detail', 'Unknown error')}")
         except Exception as e:
             st.error(f"Error saving customer information: {str(e)}")
 
+if "show_customer_success" in st.session_state and st.session_state["show_customer_success"]:
+    st.success("✅ Customer information submitted successfully!")
+
 # Calculator Selection
 st.subheader("Select Calculator Type")
-tab1, tab2 = st.tabs(["Salary Advance Calculator", "Loan Calculator"])
+tab1, tab2, tab3 = st.tabs(["Salary Advance Calculator", "Loan Calculator", "Loan Application"])
 
 # Salary Advance Calculator
 with tab1:
@@ -91,7 +98,7 @@ with tab1:
         with st.spinner("Calculating, please wait..."):
             try:
                 response = requests.post(
-                    "http://backend:8000/api/v1/calculate_salary_advance",
+                    "http://backend:8000/api/v2/calculate_salary_advance",
                     json={
                         "gross_salary": gross_salary,
                         "pay_frequency": pay_frequency,
@@ -100,8 +107,9 @@ with tab1:
                 )
                 if response.ok:
                     result = response.json()
+                    display_name = st.session_state.get("full_name", "") # Get full_name from session state
                     if result['eligible']:
-                        st.success(f"Congratulations {full_name}, you are eligible for an advance!")
+                        st.success(f"Congratulations {display_name}, you are eligible for an advance!")
                         st.info("Calculation Results")
                         cols = st.columns(4)
                         with cols[0]: st.metric("Maximum Advance", f"${result['max_advance']:,.2f}")
@@ -110,8 +118,10 @@ with tab1:
                         with cols[3]: st.metric("Total Repayable", f"${result['total_repayable']:,.2f}")
                         st.write("You can proceed to request the advance amount in the loan application form.")
                     else:
-                        st.warning(f"⚠️ Apologies {full_name}, your requested amount ${requested_amount:,.2f} exceeds the maximum advance available.")
+                        st.warning(f"⚠️ Apologies {display_name}, your requested amount ${requested_amount:,.2f} exceeds the maximum advance available.")
                         st.warning(f"Maximum Advance Available: ${result['max_advance']:,.2f}")
+                else:
+                    st.error(f"Error calculating advance: {response.json().get('detail', 'Unknown error')}")
             except Exception as e:
                 st.error(f"Error calculating advance: {str(e)}")
 
@@ -139,7 +149,7 @@ with tab2:
         with st.spinner("Calculating, please wait..."):
             try:
                 response = requests.post(
-                    "http://backend:8000/api/v1/calculate_loan",
+                    "http://backend:8000/api/v3/calculate_loan",
                     json={
                         "loan_amount": loan_amount,
                         "interest_rate": interest_rate,
@@ -148,7 +158,8 @@ with tab2:
                 )
                 if response.ok:
                     result = response.json()
-                    st.success(f"Congratulations {full_name}, your loan calculation is complete!")
+                    display_name = st.session_state.get("full_name", "") # Get full_name from session state
+                    st.success(f"Congratulations {display_name}, your loan calculation is complete!")
                     st.info("Calculation Results")
                     cols = st.columns(3)
                     with cols[0]: st.metric("Monthly Payment", f"${result['monthly_payment']:,.2f}")
@@ -157,7 +168,7 @@ with tab2:
                     
                     # Get payment schedule
                     schedule_response = requests.post(
-                        "http://backend:8000/api/v1/generate_payment_schedule",
+                        "http://backend:8000/api/v4/generate_payment_schedule",
                         json={
                             "principal": loan_amount,
                             "monthly_rate": interest_rate / 100 / 12,
@@ -178,65 +189,56 @@ with tab2:
                             file_name='payment_schedule.csv',
                             mime='text/csv'
                         )
+                    else:
+                        st.error(f"Error generating payment schedule: {schedule_response.json().get('detail', 'Unknown error')}")
+                else:
+                    st.error(f"Error calculating loan: {response.json().get('detail', 'Unknown error')}")
             except Exception as e:
                 st.error(f"Error calculating loan: {str(e)}")
 
-def is_valid_email(email):
-    return re.match(r"[^@]+@[^@]+\.[^@]+", email)
+# Loan Application Tab
+with tab3:
+    st.header("Loan Application")
+    st.write("Please answer the following questions to complete your loan application.")
 
-# In your form submission logic:
-if not is_valid_email(email):
-    st.error("Please enter a valid email address.")
-    st.stop()
-if gross_salary <= 0:
-    st.error("Gross salary must be positive.")
-    st.stop()
+    with st.form("loan_application_form"):
+        st.subheader("Applicant Details")
+        col1, col2 = st.columns(2)
+        with col1:
+            house_ownership = st.radio("Do you own a house?", options=["Yes", "No"], key="house_ownership")
+            salary_deduction_approval = st.radio("Do you approve for your salary to be deducted for the loan term?", options=["Yes", "No"], key="salary_deduction_approval")
+        with col2:
+            dependents = st.number_input("Number of Dependents", min_value=0, step=1, key="num_dependents")
+            employment_duration = st.text_input("Employment Duration (e.g., 5 years)", key="employment_duration")
 
-def post_with_retry(url, data, retries=3, delay=2):
-    for attempt in range(retries):
-        try:
-            response = requests.post(url, json=data, timeout=10)
-            response.raise_for_status()
-            return response
-        except Exception:
-            if attempt < retries - 1:
-                time.sleep(delay)
-            else:
-                return None
+        st.subheader("Upload Payment Schedule")
+        uploaded_file = st.file_uploader("Upload the CSV payment schedule generated from the Loan Calculator", type=["csv"], key="payment_schedule_upload")
 
-# Salary Advance Calculation for error handling if backend is down
-api_url = "http://your-backend-url/api/v1/calculate_salary_advance"
-payload = {"gross_salary": gross_salary, "email": email}
+        loan_application_submit = st.form_submit_button("Submit Loan Application")
 
-try:
-    response = post_with_retry(api_url, payload)
-    if response and response.status_code == 200:
-        result = response.json()
-        st.success(f"Max Advance: {result['max_advance']}")
-    else:
-        st.error("Could not connect to the server. Please try again later.")
-except Exception:
-    st.error("Could not connect to the server. Please check your connection or try again later.")
+    if loan_application_submit:
+        if house_ownership == "" or salary_deduction_approval == "" or dependents == 0 or employment_duration == "" or uploaded_file is None:
+            st.error("Please answer all questions and upload the payment schedule.")
+        else:
+            try:
+                # Read and base64 encode the uploaded CSV file
+                csv_content = uploaded_file.getvalue().decode("utf-8")
+                encoded_csv = base64.b64encode(csv_content.encode("utf-8")).decode("utf-8")
 
-import streamlit as st
-
-@st.cache_data(ttl=60)
-def check_backend_health():
-    try:
-        r = requests.get("http://your-backend-url/health", timeout=5)
-        return r.status_code == 200
-    except Exception:
-        return False
-
-if not check_backend_health():
-    st.warning("Backend service is currently unavailable. Some features may not work.")
-    def local_salary_advance(gross_salary):
-        return gross_salary * 0.5
-
-    if not check_backend_health():
-        st.info("Using local calculation. Results are estimates.")
-        max_advance = local_salary_advance(gross_salary)
-        st.metric("Estimated Max Advance", f"{max_advance:,.2f}")
-    else:
-        # Call backend as usual
-        pass
+                response = requests.post(
+                    "http://backend:8000/api/v5/submit_loan_application",
+                    json={
+                        "house_ownership": house_ownership,
+                        "salary_deduction_approval": salary_deduction_approval,
+                        "dependents": dependents,
+                        "employment_duration": employment_duration,
+                        "payment_schedule_csv": encoded_csv
+                    }
+                )
+                if response.ok:
+                    st.success(response.json()["message"])
+                else:
+                    st.error(f"Error submitting loan application: {response.json().get('detail', 'Unknown error')}")
+            except Exception as e:
+                st.error(f"Error submitting loan application: {str(e)}")
+            
