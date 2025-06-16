@@ -14,6 +14,7 @@ The application consists of two main components:
 - Loan amount and interest calculations
 - Compound interest computations
 - Interactive UI with real-time results
+- **Loan application with validation questions and payment schedule upload**
 
 ## 📸 Screenshots
 
@@ -61,6 +62,8 @@ docker compose up --build
 
 ```
 Advanced-Salary-Loan-Calculator/
+├── .streamlit/
+│   └── config.toml
 ├── front-end/
 │   ├── Dockerfile
 │   ├── requirements.txt
@@ -68,7 +71,12 @@ Advanced-Salary-Loan-Calculator/
 ├── backend/
 │   ├── Dockerfile
 │   ├── requirements.txt
-│   └── main.py
+│   ├── main.py
+│   ├── customer_info.py
+│   ├── loan_application.py
+│   ├── loan_calculation.py
+│   ├── models.py
+│   └── payment_schedule.py
 ├── docker-compose.yml
 ├── test-compose.yml
 ├── .gitignore
@@ -96,15 +104,20 @@ Advanced-Salary-Loan-Calculator/
 
 ### Endpoints
 
-1. `/calculate_advance`
+1. `/api/v2/calculate_advance`
    - Calculates salary advance eligibility and amount
    - Input: Salary details, requested amount
    - Output: Eligibility status, maximum advance
 
-2. `/calculate_loan`
+2. `/api/v3/calculate_loan`
    - Calculates loan details and interest
    - Input: Loan amount, interest rate, term
    - Output: Total repayable amount, schedule
+
+3. `/api/v5/submit_loan_application`
+   - Submits a loan application with applicant details and payment schedule.
+   - Input: House ownership, salary deduction approval, number of dependents, employment duration, base64 encoded payment schedule CSV.
+   - Output: Success message.
 
 ## 🚀 Deployment
 
