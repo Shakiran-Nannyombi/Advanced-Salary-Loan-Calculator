@@ -5,6 +5,7 @@ services:
       - "8501:8501"
     volumes:
       - ./front-end:/app
+      - ./.streamlit:/app/.streamlit
     env_file:
       - .env
     depends_on:
